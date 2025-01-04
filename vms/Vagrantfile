@@ -1,0 +1,25 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+require 'yaml'
+
+config = YAML.load_file(File.join(File.dirname(__FILE__), 'config.yml'))
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |vag|
+  vag.vm.box = config["box-name"]
+
+  config["vms"].each do |vm_config|
+    vag.vm.define vm_config["name"] do |vm|
+      vm.vm.network :private_network, ip: vm_config["ip"]
+      vm.vm.synced_folder ".", "/vagrant", disabled: true
+
+      vag.vm.provider "vmware_desktop" do |vmware|
+        vmware.gui = false
+        vmware.memory = vm_config['mem']
+        vmware.cpus = vm_config['cpu']
+      end
+    end
+  end
+end
+
