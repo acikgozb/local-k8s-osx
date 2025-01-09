@@ -1,2 +1,8 @@
-# Ignore Vagrant artifacts
-**/.vagrant/
+**/ubuntu-24.04.img
+**/gateway
+**/control0
+**/control1
+**/control2
+**/worker0
+**/worker1
+**/worker2
