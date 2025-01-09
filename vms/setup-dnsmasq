@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+HOMEBREW_PREFIX=${HOMEBREW_PREFIX:-/opt/homebrew}
+
+base_dnsmasq_conf="$HOMEBREW_PREFIX/etc/dnsmasq.conf"
+k8s_dnsmasq_conf="$(pwd)/dnsmasq.conf"
+
+# inet configurations of VMs.
+# The exported variables are the ones that are used in dnsmasq.conf.
+if_inet=192.168.200.1
+export dhcp_ranges=(192.168.200.2 192.168.200.10)
+
+export host_inets=()
+for ((i=0;i<7;i++))
+do
+    host_inets[i]=192.168.200.$((i+3))
+done
+
+export kube_api_inet=192.168.200.11
+
+# Apply local-k8s dnsmasq config.
+conf_marker="local K8s dnsmasq configuration."
+if ! grep -q "$conf_marker" "$base_dnsmasq_conf"; then
+eval "cat << EOF
+# Start of $conf_marker
+$(<"$k8s_dnsmasq_conf")
+# End of $conf_marker
+EOF" >> "$base_dnsmasq_conf"
+fi
+
+# The workaround solution that disables macOS's default DNS and DHCP daemon.
+# 1 - Create a dummy interface for dnsmasq to listen.
+ifname=$(ifconfig bridge create inet $if_inet netmask 255.255.255.0)
+brew services restart dnsmasq
+
+# 2 - Replace the dummy interface with the actual interface created by vmnet-socket.
+ifconfig "$ifname" destroy
+HOMEBREW_PREFIX=${HOMEBREW_PREFIX:-/opt/homebrew}
+"$HOMEBREW_PREFIX"/opt/socket_vmnet/bin/socket_vmnet \
+    --vmnet-gateway=$if_inet \
+    "$HOMEBREW_PREFIX"/var/run/socket_vmnet &
+
+# Right now, dnsmasq listens the address $if_gateway_inet, but since we removed the
+# interface, the service is in malfunctioned state.
+# Even though you can see its listening on lsof, trying to access dnsmasq does not work.
+# However, this is enough to disable default macOS DNS & DHCP server to listen our subnet.
+# So, we need to restart dnsmasq to apply the workaround solution.
+# 3 - Give the socket some time and restart dnsmasq afterwards.
+sleep 1
+brew services restart dnsmasq

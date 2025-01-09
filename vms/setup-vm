@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -e
+dir=$(dirname "$0")
+
+# Grab the helper script.
+source "$dir/helpers"
+
+# Download the cloud image, if it does not exist.
+img_name="ubuntu-24.04.img"
+img_url="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
+if ! [[ -f "$dir/$img_name" ]]; then
+    wget -O "$dir/$img_name" "$img_url"
+fi
+
+# Parse arguments.
+vm_id="$1"
+vm_name="$(get_vm_name "$vm_id")"
+vm_dir="$dir/$vm_name"
+
+# Get VM "type" - gateway, control, or worker.
+vm_type="${vm_name%%[0-9]*}"
+
+# Make sure VM directory exists.
+mkdir -p "$vm_dir"
+
+# Prepare the VM disk image
+# ../ is used due to writing the output under a sub-directory $vm_dir.
+qemu-img create -F qcow2 -b "../$img_name" -f qcow2 "$vm_dir/disk.img" 20G
+
+# Prepare `cloud-init` `meta-data`.
+cat << EOF > "$vm_dir/meta-data"
+instance-id: $vm_name
+local-hostname: $vm_name
+EOF
+
+# Get `user-data` for a given VM type.
+eval "cat << EOF
+$(<"$dir/cloud-init/user-data.$vm_type")
+EOF
+" > "$vm_dir/user-data"
+
+# Get `network-config` for a given VM type.
+eval "cat << EOF
+$(<"$dir/cloud-init/network-config.$vm_type")
+EOF
+" > "$vm_dir/network-config"
+
+# Build the `cloud-init` ISO.
+mkisofs -output "$vm_dir/cidata.iso" -volid cidata -joliet -rock "$vm_dir"/{user-data,meta-data,network-config}
