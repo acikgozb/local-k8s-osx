@@ -6,3 +6,5 @@
 **/worker0
 **/worker1
 **/worker2
+**/vm-ssh-key.pub
+**/vm-ssh-key
