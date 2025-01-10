@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+dir=$(dirname "$0")
+
 HOMEBREW_PREFIX=${HOMEBREW_PREFIX:-/opt/homebrew}
 
 base_dnsmasq_conf="$HOMEBREW_PREFIX/etc/dnsmasq.conf"
@@ -10,11 +12,9 @@ k8s_dnsmasq_conf="$(pwd)/dnsmasq.conf"
 if_inet=192.168.200.1
 export dhcp_ranges=(192.168.200.2 192.168.200.10)
 
+source "$dir/definitions"
 export host_inets=()
-for ((i=0;i<7;i++))
-do
-    host_inets[i]=192.168.200.$((i+3))
-done
+read -r -a host_inets < <(get_inets)
 
 export kube_api_inet=192.168.200.11
 

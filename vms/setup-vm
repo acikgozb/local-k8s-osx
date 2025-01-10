@@ -4,7 +4,7 @@ set -e
 dir=$(dirname "$0")
 
 # Grab the helper script.
-source "$dir/helpers"
+source "$dir/definitions"
 
 # Download the cloud image, if it does not exist.
 img_name="ubuntu-24.04.img"
