@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -e
+
+dir=$(dirname "$0")
+
+source "$dir/definitions"
+
+vm_id=$1
+vm_name=$(get_vm_name "$vm_id")
+vm_dir="$dir/$vm_name"
+
+# The QEMU command.
+mac="52:52:52:00:00:0$vm_id"
+
+/opt/homebrew/opt/socket_vmnet/bin/socket_vmnet_client \
+  /opt/homebrew/var/run/socket_vmnet \
+  qemu-system-aarch64 \
+  -nographic \
+  -machine virt,highmem=on \
+  -accel hvf \
+  -cpu host \
+  -smp 2 \
+  -m 2G \
+  -device virtio-net-pci,netdev=k8snet,mac="$mac" \
+  -netdev socket,id=k8snet,fd=3 \
+    -bios /opt/homebrew/share/qemu/edk2-aarch64-code.fd \
+    -hda "$vm_dir/disk.img" \
+    -drive file="$vm_dir/cidata.iso",driver=raw,if=virtio

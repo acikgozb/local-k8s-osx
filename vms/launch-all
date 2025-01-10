@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+set -e
+
+dir=$(dirname "$0")
+
+source "$dir/definitions"
+
+tmux_session_name="$1"
+if [[ -z "$tmux_session_name" ]]; then
+    echo "usage: $(basename "$0") <tmux-session-name>" >&2
+    exit 1
+fi
+
+tmux new-session -s "$tmux_session_name" -n qemu -d
+
+for vm_id in {0..6}; do
+    "$dir/setup-vm" "$vm_id"
+    tmux send-keys -t "$tmux_session_name" "cd $dir" C-m
+    tmux send-keys -t "$tmux_session_name" "vm_id=$vm_id; vm_name=$(get_vm_name "$vm_id")" C-m
+    tmux send-keys -t "$tmux_session_name" "./launch-vm $vm_id" C-m
+
+    if [[ $vm_id != 6 ]]; then
+        tmux split-window -t "$tmux_session_name" -v
+    fi
+    tmux select-layout -t "$tmux_session_name" tiled
+done
