@@ -14,12 +14,21 @@ get_vm_name() {
     fi
 }
 
+inet_nw_bits=192.168.200
+
 get_inets() {
     inets=()
     for ((i=0;i<7;i++))
     do
-        inets[i]=192.168.200.$((i+3))
+        inets[i]=$inet_nw_bits.$((i+3))
     done
 
     echo "${inets[*]}"
+}
+
+get_ssh_cmd() {
+    vm_id="$1"
+
+    dir=$(dirname "$0")
+    echo "ssh ubuntu@$inet_nw_bits.$((vm_id+3)) -i $dir/vm-ssh-key"
 }
