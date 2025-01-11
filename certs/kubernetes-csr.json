@@ -1,0 +1,36 @@
+{
+  "CN": "Kubernetes",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "Country",
+      "L": "Location",
+      "O": "kubenet-org",
+      "OU": "kubenet",
+      "ST": "State"
+    }
+  ],
+  "hosts": [
+    "kubernetes",
+    "kubernetes.default",
+    "kubernetes.default.svc",
+    "kubernetes.default.svc.cluster",
+    "kubernetes.default.svc.cluster.local",
+    "10.32.0.1",
+    "kubernetes.kubenet",
+    "192.168.200.11",
+    "control0",
+    "control0.kubenet",
+    "192.168.200.4",
+    "control1",
+    "control1.kubenet",
+    "192.168.200.5",
+    "control2",
+    "control2.kubenet",
+    "192.168.200.6",
+    "127.0.0.1"
+  ]
+}
