@@ -1,27 +1,22 @@
 #!/usr/bin/env bash
 
 set -e
-dir=$(dirname "$0")
+dir=${BASH_SOURCE%/*}
 
-# Grab the helper script.
-source "$dir/definitions"
+source "$dir/../definitions"
 
-# Download the cloud image, if it does not exist.
 img_name="ubuntu-24.04.img"
 img_url="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-arm64.img"
 if ! [[ -f "$dir/$img_name" ]]; then
     wget -O "$dir/$img_name" "$img_url"
 fi
 
-# Parse arguments.
 vm_id="$1"
 vm_name="$(get_vm_name "$vm_id")"
 vm_dir="$dir/$vm_name"
 
-# Get VM "type" - gateway, control, or worker.
 vm_type="${vm_name%%[0-9]*}"
 
-# Make sure VM directory exists.
 mkdir -p "$vm_dir"
 
 # Prepare the VM disk image

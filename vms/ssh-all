@@ -2,7 +2,7 @@
 
 set -e
 
-dir=$(dirname "$0")
+dir=${BASH_SOURCE%/*}
 
 tmux_session_name="$1"
 if [[ -z "$tmux_session_name" ]]; then
@@ -14,11 +14,11 @@ for vm_id in {0..6}; do
     "$dir/setup-ssh" "$vm_id"
 done
 
-source "$dir/definitions"
+source "$dir/../definitions"
 
 # Gateway SSH session.
 tmux new-session -s "$tmux_session_name" -n "kubenet-ssh-gateway" -d
-tmux send-keys -t "$tmux_session_name" "$(get_ssh_cmd 0)" C-m
+tmux send-keys -t "$tmux_session_name" "ssh ubuntu@$(get_inet 0) -i $(get_ssh_key_path)" C-m
 
 # Create custom tmux windows for other VM "groups"
 ssh_window() {
@@ -29,7 +29,7 @@ ssh_window() {
 
     tmux new-window -t "$tmux_session_name" -n "$win_name"
     for vm_id in $(seq "$first_vm_id" "$last_vm_id"); do
-        tmux send-keys -t "$tmux_session_name" "$(get_ssh_cmd "$vm_id")" C-m
+        tmux send-keys -t "$tmux_session_name" "ssh ubuntu@$(get_inet "$vm_id") -i $(get_ssh_key_path)"  C-m
 
         if [[ "$vm_id" != "$last_vm_id" ]]; then
             tmux split-window -t "$tmux_session_name" -v

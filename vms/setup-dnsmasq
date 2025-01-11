@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-dir=$(dirname "$0")
+dir=${BASH_SOURCE%/*}
 
 HOMEBREW_PREFIX=${HOMEBREW_PREFIX:-/opt/homebrew}
 
@@ -12,7 +12,7 @@ k8s_dnsmasq_conf="$(pwd)/dnsmasq.conf"
 if_inet=192.168.200.1
 export dhcp_ranges=(192.168.200.2 192.168.200.10)
 
-source "$dir/definitions"
+source "$dir/../definitions"
 export host_inets=()
 read -r -a host_inets < <(get_inets)
 

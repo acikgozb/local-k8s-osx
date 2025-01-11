@@ -1,4 +1,7 @@
+# The base cloud image used for each VM.
 **/ubuntu-24.04.img
+
+# Directories holding the base cloud image + `cloud-init` ISO for each VM.
 **/gateway
 **/control0
 **/control1
@@ -6,5 +9,19 @@
 **/worker0
 **/worker1
 **/worker2
+
+# The SSH keys generated for VM SSH access.
 **/vm-ssh-key.pub
 **/vm-ssh-key
+
+# The certificate files generated via cfssl.
+**/*key.pem
+**/*.pem
+**/*.csr
+
+# The .csr files generated for control plane and worker nodes.
+**/control*-csr.json
+**/worker*-csr.json
+
+# The .kubeconfig files.
+**/*.kubeconfig

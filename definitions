@@ -2,7 +2,7 @@
 
 get_vm_name() {
     id="$1"
-    if [[ ! $id =~ ^-?[0-9]+$ ]]; then 
+    if [[ ! $id =~ ^-?[0-9]+$ ]]; then
         echo "Bad machine ID: $id" >&2
         return 1
     elif [[ $id -eq 0 ]]; then
@@ -12,6 +12,17 @@ get_vm_name() {
     elif [[ $id -le 6 ]]; then
         echo worker$((id-4))
     fi
+}
+
+get_vm_id() {
+    vm_name="$1"
+    names=(gateway control{0..2} worker{0..2})
+
+    for i in "${!names[@]}"; do
+        if [[ "${names[$i]}" = "$vm_name" ]];then
+            echo "$i"
+        fi
+    done
 }
 
 inet_nw_bits=192.168.200
@@ -26,9 +37,13 @@ get_inets() {
     echo "${inets[*]}"
 }
 
-get_ssh_cmd() {
+get_inet() {
     vm_id="$1"
 
-    dir=$(dirname "$0")
-    echo "ssh ubuntu@$inet_nw_bits.$((vm_id+3)) -i $dir/vm-ssh-key"
+    echo "$inet_nw_bits.$((vm_id+3))"
+}
+
+get_ssh_key_path() {
+    local dir="${BASH_SOURCE%/*}"
+    echo "$dir/vms/vm-ssh-key"
 }

@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+
+dir=${BASH_SOURCE%/*}
+
+node-csr() {
+    vm_names=(control{0..2} worker{0..2})
+
+    # TODO: acikgozb: The seq definition in the guide is incorrect. Notify the author.
+    # TODO: acikgozb: Use $inet_nw_bits instead of hardcoding 192.168.200. The subnet bits should be controlled from a central place.
+    for vm_id in {0..5}; do
+        vm_name=${vm_names[$vm_id]}
+        cat <<EOF > "$dir/$vm_name-csr.json"
+{
+    "CN": "system:node:$vm_name",
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "Country",
+            "L": "Location",
+            "O": "system:nodes",
+            "OU": "kubenet",
+            "ST": "State"
+        }
+    ],
+    "hosts": [
+        "$vm_name",
+        "$vm_name.kubenet",
+        "192.168.200.$((4 + vm_id))"
+    ]
+}
+EOF
+    done
+}
+
+certs() {
+    cfssl gencert -initca "$dir/ca-csr.json" | cfssljson -bare ca
+
+    for name in control{0..2} worker{0..2} kubernetes admin kube-scheduler kube-controller-manager kube-proxy service-account; do
+        cfssl gencert \
+            -ca="$dir/ca.pem" \
+            -ca-key="$dir/ca-key.pem" \
+            -config="$dir/ca-config.json" \
+            -profile=kubernetes \
+            "$dir/$name-csr.json" | cfssljson -bare "$name"
+    done
+}
+
+kubeconfigs() {
+    pairs=(
+        "admin,admin"
+        "kube-scheduler,system:kube-scheduler"
+        "kube-controller-manager,system:kube-controller-manager"
+        "kube-proxy,system:kube-proxy"
+    )
+    for i in {0..2}; do
+        pairs+=("control$i,system:node:control$i" "worker$i,system:node:worker$i")
+    done
+
+    for pair in "${pairs[@]}"; do
+        IFS=, read -r cert user < <(echo "$pair")
+        kubeconfig="$dir/${cert}.kubeconfig"
+
+        kubectl config set-cluster kubenet \
+            --certificate-authority="$dir/ca.pem" \
+            --embed-certs=true \
+            --server=https://kubernetes:6443 \
+            --kubeconfig="$kubeconfig"
+
+        kubectl config set-credentials "$user" \
+            --client-certificate="$dir/${cert}.pem" \
+            --client-key="$dir/${cert}-key.pem" \
+            --embed-certs=true \
+            --kubeconfig="$kubeconfig"
+
+        kubectl config set-context default \
+            --cluster=kubenet \
+            --user="$user" \
+            --kubeconfig="$kubeconfig"
+
+        kubectl config use-context default \
+            --kubeconfig="$kubeconfig"
+    done
+}
+
+encryptkey() {
+    key=$(head -c 32 /dev/urandom | base64)
+
+    cat > "$dir/encryption-config.yaml" <<EOF
+kind: EncryptionConfig
+apiVersion: v1
+resources:
+    - resources:
+        - secrets
+      providers:
+        - aescbc:
+            keys:
+                - name: key1
+                  secret: $key
+        - identity: {}
+EOF
+}
+
+"$@"
