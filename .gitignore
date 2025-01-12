@@ -25,3 +25,6 @@
 
 # The .kubeconfig files.
 **/*.kubeconfig
+
+# The encryption configuration which is used by kube-apiserver to encrypt the data stored in etcd.
+**/encryption-config.yaml
