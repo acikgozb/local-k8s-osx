@@ -1,0 +1,8 @@
+network:
+    version: 2
+    ethernets:
+        eth:
+            match:
+                name: enp*
+            addresses: [192.168.200.11/32]
+            dhcp4: true

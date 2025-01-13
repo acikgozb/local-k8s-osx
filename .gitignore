@@ -2,13 +2,13 @@
 **/ubuntu-24.04.img
 
 # Directories holding the base cloud image + `cloud-init` ISO for each VM.
-**/gateway
-**/control0
-**/control1
-**/control2
-**/worker0
-**/worker1
-**/worker2
+**/vms/gateway
+**/vms/control0
+**/vms/control1
+**/vms/control2
+**/vms/worker0
+**/vms/worker1
+**/vms/worker2
 
 # The SSH keys generated for VM SSH access.
 **/vm-ssh-key.pub

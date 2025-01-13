@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+arch=arm64
+k8s_version=1.31.4
+
 get_vm_name() {
     id="$1"
     if [[ ! $id =~ ^-?[0-9]+$ ]]; then
