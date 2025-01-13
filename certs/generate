@@ -66,7 +66,7 @@ kubeconfigs() {
         kubectl config set-cluster kubenet \
             --certificate-authority="$dir/ca.pem" \
             --embed-certs=true \
-            --server=https://kubernetes:6443 \
+            --server=https://192.168.200.11:6443 \
             --kubeconfig="$kubeconfig"
 
         kubectl config set-credentials "$user" \

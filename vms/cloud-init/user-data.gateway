@@ -3,6 +3,12 @@ ssh_authorized_keys:
     - $(<$(pwd)/vm-ssh-key.pub)
 packages:
     - curl
+    - ipvsadm
+    - ldirectord
 package_update: true
 package_upgrade: true
 package_reboot_if_required: false
+ca_certs:
+    trusted:
+        - |
+$(sed "s/^/      /g" "$dir/certs/ca.pem")
