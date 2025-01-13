@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -e
+
 dir=${BASH_SOURCE%/*}
 
 source "$dir/../definitions"

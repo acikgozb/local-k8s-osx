@@ -8,7 +8,7 @@
     {
       "C": "Country",
       "L": "Location",
-      "O": "kubenet-org",
+      "O": "system:masters",
       "OU": "kubenet",
       "ST": "State"
     }
