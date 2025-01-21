@@ -3,9 +3,6 @@
 This project is an implementation of a wonderfully written guide called [kubernetes-the-harder-way](https://github.com/ghik/kubernetes-the-harder-way).
 It mainly serves as a learning material and a base playground for further experimentations.
 
-Whilst the guide is heavily used, this project is not an exact copy of it.
-There are certain key differences, especially regarding the networking part.
-
 ## Disclaimer
 
 Here are some disclaimers about this project:
@@ -60,15 +57,23 @@ cd ./local-k8s
 
 When the removal process completes, you will see the message `local-k8s-rm: the cluster is removed successfully.`.
 
-## The Implementation
+## The "Implementation"
 
-For the implementation, please refer to the individual README's which explain each part of the project:
+The reason why this project is called as _an implementation_ is that whilst the idea is the same with the original guide posted above, there are differences when it comes the overall networking setup of the cluster.
+So, it's not really an exact copy of the guide.
 
-- [Network infrastructure](./vms/NETWORK-INFRASTRUCTURE.md),
-- [Provisioning and configuring VMs](./vms/VMs.md),
-- [TLS and Kubeconfigs to secure the cluster](),
-- [Installing and configuring the binaries on nodes](),
-- [Configuring the host machine]()
+The guide uses the subnet `192.168.1.0/24` to set up the cluster network.
+However, this subnet is commonly occupied by ISPs, so it is a bit risky to assume that it is free for use.
+
+The author mentions this in several different GitHub issues such as [this](https://github.com/ghik/kubernetes-the-harder-way/issues/16#issuecomment-2440799114).
+So, the network infrastructure for this cluster is set up on a completely different subnet, which is `192.168.200.0/24`.
+
+To dive deep into the networking part of the cluster, please refer to the [README](./vms/NETWORK-INFRASTRUCTURE.md) here.
+
+The rest of the project follows more or less the same path with the guide, with slight differences:
+
+- The overall directory structure is changed a little bit to show the intent of each script.
+- The `setup` and `remove` scripts are added to the project to make it easier to play around with the cluster itself.
 
 ## TODO
 
