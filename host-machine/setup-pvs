@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+dir=${BASH_SOURCE%/*}
+mkdir -p "$dir/nfs-pvs"
+
+source "$dir/../definitions"
+
+# Required by nfs-provisioner.
+abs_path=$(cd "$dir" && pwd)
+
+sudo touch /etc/exports
+
+# Unfortunately, it is not possible to configure nfsd without messing with the global files.
+# The recommended way to configure nfsd is to either write to /etc/nfs.d, or append to /etc/exports
+# if we need to add custom exports.
+# Check `man nfsd` for more information.
+sudo sed -i '' -e '/nfs-pvs/d' "/etc/exports"
+cat <<EOF | sudo tee -a "/etc/exports"
+$abs_path/nfs-pvs -network $kubenet_nw_bits.0 -mask 255.255.255.0 -maproot=$(whoami) -alldirs
+EOF
+
+if [[ -z "$(pgrep nfsd)" ]]; then
+    sudo nfsd start
+fi
+sudo nfsd update
+
+if ! helm repo list | grep -q "nfs-provisioner"; then
+    helm repo add nfs-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+fi
+
+if ! kubectl get storageclass | grep -q "nfs-client"; then
+    helm install -n kube-system nfs-provisioner nfs-provisioner/nfs-subdir-external-provisioner \
+        --set nfs.server=$kubenet_if_inet \
+        --set nfs.path="$abs_path/nfs-pvs" \
+        --set storageClass.defaultClass=true
+fi

@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+kube_api_inet="$1"
+c1_inet="$2"
+c2_inet="$3"
+c3_inet="$4"
+
+cat <<EOF | tee /etc/ha.d/ldirectord.cf
+checktimeout=5
+checkinterval=1
+autoreload=yes
+quiescent=yes
+
+virtual=$kube_api_inet:6443
+    servicename=kube-api
+    real=$c1_inet:6443 gate
+    real=$c2_inet:6443 gate
+    real=$c3_inet:6443 gate
+    scheduler=wrr
+    checktype=negotiate
+    service=https
+    request="healthz"
+    receive="ok"
+EOF
+
+systemctl restart ldirectord
+
+until ipvsadm -L | grep -q "wrr"; do sleep 1; done

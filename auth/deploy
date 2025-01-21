@@ -25,7 +25,6 @@ for i in {0..2}; do
         "$dir/$vm_name.pem" \
         "$dir/$vm_name-key.pem" \
         "$dir/$vm_name.kubeconfig" \
-        "$dir/kube-proxy.kubeconfig" \
         ubuntu@"$(get_inet "$vm_id")":~
 done
 
@@ -39,6 +38,5 @@ for i in {0..2}; do
         "$dir/$vm_name.pem" \
         "$dir/$vm_name-key.pem" \
         "$dir/$vm_name.kubeconfig" \
-        "$dir/kube-proxy.kubeconfig" \
         ubuntu@"$(get_inet "$vm_id")":~
 done

@@ -8,7 +8,7 @@
     {
       "C": "Country",
       "L": "Location",
-      "O": "kubenet-org",
+      "O": "Kubernetes",
       "OU": "kubenet",
       "ST": "State"
     }
@@ -20,7 +20,7 @@
     "kubernetes.default.svc.cluster",
     "kubernetes.default.svc.cluster.local",
     "10.32.0.1",
-    "kubernetes.kubenet",
+    "kube-api.kubenet",
     "192.168.200.11",
     "control0",
     "control0.kubenet",

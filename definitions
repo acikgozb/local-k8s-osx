@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 
-arch=arm64
-k8s_version=1.31.4
+export arch=arm64
+
+# Base network definitions.
+export kubenet_nw_bits=192.168.200
+export kubenet_if_inet=$kubenet_nw_bits.1
+export kube_api_inet=192.168.200.11
+
+# Versions for installed components.
+export etcd_version=3.5.17
+export k8s_version=1.31.4
+export containerd_version=2.0.2
+export cni_spec_version=1.0.1
+export cri_version=1.32.0
+export runc_version=1.2.4
 
 get_vm_name() {
     id="$1"
@@ -28,13 +40,11 @@ get_vm_id() {
     done
 }
 
-inet_nw_bits=192.168.200
-
 get_inets() {
     inets=()
     for ((i=0;i<7;i++))
     do
-        inets[i]=$inet_nw_bits.$((i+3))
+        inets[i]=$kubenet_nw_bits.$((i+3))
     done
 
     echo "${inets[*]}"
@@ -42,8 +52,7 @@ get_inets() {
 
 get_inet() {
     vm_id="$1"
-
-    echo "$inet_nw_bits.$((vm_id+3))"
+    echo "$kubenet_nw_bits.$((vm_id+3))"
 }
 
 get_ssh_key_path() {

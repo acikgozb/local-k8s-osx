@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+
+set -e
+
+program="local-k8s-setup"
+
+dir=${BASH_SOURCE%/*}
+
+source "$dir/definitions"
+
+echo "$program: setting up a local Kubernetes cluster."
+
+packages=(wget curl tmux dnsmasq socket_vmnet qemu cfssl cdrtools kubernetes-cli helm)
+
+echo "$program: the cluster setup needs the following tools:"
+echo "${packages[@]}"
+echo "$program: ensuring the packets are installed with Homebrew."
+# brew install "${packages[@]}"
+
+
+echo "$program: setting up the network for $kubenet_if_inet."
+chmod +x "$dir/vms/setup-dnsmasq"
+sudo "$dir/vms/setup-dnsmasq"
+
+
+echo "$program: creating an SSH key pair for SSH access to VMs."
+ssh-keygen -C '' -N '' -t rsa -f "$dir/vms/vm-ssh-key" -q
+
+
+echo "$program: generating CA and other TLS certs."
+for cmd in node-csr certs; do
+    "$dir/auth/generate" "$cmd"
+done
+
+
+echo "$program: launching the VMs for the cluster under a tmux session called \"kubenet-vms\"."
+chmod +x "$dir/vms/launch-all"
+"$dir/vms/launch-all" "kubenet-vms"
+
+
+echo "$program: starting the SSH session for the cluster under a tmux session called \"kubenet-ssh\"."
+chmod +x "$dir/vms/ssh-all"
+"$dir/vms/ssh-all" "kubenet-ssh"
+
+
+echo "$program: generating kubeconfigs and the encryption key for the cluster."
+for cmd in kubeconfigs encryptkey; do
+    "$dir/auth/generate" "$cmd"
+done
+
+
+echo "$program: deploying the generated CA, TLS certs, kubeconfigs and encryption key to the nodes."
+"$dir/auth/deploy"
+
+
+echo "$program: setting up local admin kubeconfig to enable kubectl on the host machine."
+"$dir/auth/setup-local-kubeconfig"
+
+
+echo "$program: installing control-plane components to control nodes."
+chmod +x "$dir/remote-scripts/install-control-plane"
+control_pids=()
+for vm_id in {1..3}; do
+    vm_inet=$(get_inet "$vm_id")
+
+    ssh ubuntu@"$vm_inet" -i "$(get_ssh_key_path)" \
+        sudo bash -s < "$dir/remote-scripts/install-control-plane" -- \
+        "$etcd_version" \
+        "$k8s_version" \
+        "$arch" \
+        "$vm_inet" \
+        &
+    control_pids+=("$!")
+done
+wait "${control_pids[@]}"
+
+echo "$program: setting up an LB on gateway VM for control nodes."
+chmod +x "$dir/remote-scripts/setup-control-lb"
+gw_inet=$(get_inet 0)
+
+ssh ubuntu@"$gw_inet" -i "$(get_ssh_key_path)" \
+    sudo bash -s < "$dir/remote-scripts/setup-control-lb" -- \
+    "$kube_api_inet" \
+    "$(get_inet 1)" \
+    "$(get_inet 2)" \
+    "$(get_inet 3)" \
+    &
+
+wait "$!"
+
+
+echo "$program: installing the container runtime and kubelet to all nodes."
+chmod +x "$dir/remote-scripts/install-node-components"
+pids=()
+for vm_id in {1..6}; do
+    vm_inet=$(get_inet "$vm_id")
+    vm_name=$(get_vm_name "$vm_id")
+
+    ssh ubuntu@"$vm_inet" -i "$(get_ssh_key_path)" \
+        sudo bash -s < "$dir/remote-scripts/install-node-components" -- \
+        "$arch" \
+        "$k8s_version" \
+        "$cri_version" \
+        "$containerd_version" \
+        "$runc_version" \
+        "$vm_name" \
+        &
+    pids+=("$!")
+done
+wait "${pids[@]}"
+
+
+echo "$program: Authorizing kube-apiserver to access kubelet."
+"$dir/host-machine/authorize-kube-apiserver"
+
+
+echo "$program: installing Cilium via helm to use as a kube-proxy replacement."
+"$dir/host-machine/setup-cilium" "$kube_api_inet"
+
+
+echo "$program: installing coredns as the cluster-internal DNS server."
+chmod +x "$dir/host-machine/setup-cluster-internal-dns"
+"$dir/host-machine/setup-cluster-internal-dns"
+
+
+echo "$program: setting up the NFS for PersistentVolume's."
+chmod +x "$dir/host-machine/setup-pvs"
+"$dir/host-machine/setup-pvs"
+
+
+echo "$program: setting up MetalLB to expose Kubernetes Services via a load balancer."
+chmod +x "$dir/host-machine/setup-service-lb"
+"$dir/host-machine/setup-service-lb"
+
+
+echo "$program: the installation is completed."

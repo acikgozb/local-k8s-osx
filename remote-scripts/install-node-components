@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+arch="$1"
+k8s_version="$2"
+cri_version="$3"
+containerd_version="$4"
+runc_version="$5"
+vm_name="$6"
+
+crictl_archive=crictl_v${cri_version}-linux-${arch}.tar.gz
+containerd_archive=containerd-${containerd_version}-linux-${arch}.tar.gz
+
+wget -q --show-progress --https-only --timestamping \
+    https://github.com/kubernetes-sigs/cri-tools/releases/download/v"${cri_version}"/"${crictl_archive}" \
+    https://github.com/opencontainers/runc/releases/download/v"${runc_version}"/runc."${arch}" \
+    https://github.com/containerd/containerd/releases/download/v"${containerd_version}"/"${containerd_archive}" \
+    https://dl.k8s.io/v"${k8s_version}"/bin/linux/"${arch}"/kubelet
+
+mkdir -p \
+    /opt/cni/bin \
+    /etc/cni/net.d \
+    /var/lib/kubelet \
+    /var/run/kubernetes \
+    /var/lib/kubernetes
+
+mkdir -p containerd
+
+tar -xvf "$crictl_archive"
+tar -xvf "$containerd_archive" -C containerd
+cp runc."${arch}" runc
+chmod +x runc crictl kubelet
+cp runc crictl kubelet /usr/local/bin/
+cp containerd/bin/* /bin/
+
+# `containerd`.
+
+cat <<EOF | tee /etc/containerd/config.toml
+version = 3
+[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc]
+  runtime_type = 'io.containerd.runc.v2'
+  [plugins."io.containerd.cri.v1.runtime".containerd.runtimes.runc.options]
+  SystemdCgroup = true
+  BinaryName = "/usr/local/bin/runc"
+EOF
+
+cat <<EOF | tee /etc/systemd/system/containerd.service
+[Unit]
+Description=containerd container runtime
+Documentation=https://containerd.io
+After=network.target
+
+[Service]
+ExecStartPre=/sbin/modprobe overlay
+ExecStart=/bin/containerd
+Restart=always
+RestartSec=5
+Delegate=yes
+KillMode=process
+OOMScoreAdjust=-999
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# `kubelet`.
+
+cp "${vm_name}"-key.pem "${vm_name}".pem /var/lib/kubelet/
+cp "${vm_name}".kubeconfig /var/lib/kubelet/kubeconfig
+cp ca.pem /var/lib/kubernetes/
+
+cat <<EOF | tee /var/lib/kubelet/kubelet-config.yaml
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    enabled: true
+  x509:
+    clientCAFile: "/var/lib/kubernetes/ca.pem"
+authorization:
+  mode: Webhook
+clusterDomain: "cluster.local"
+clusterDNS:
+  - "10.32.0.10"
+resolvConf: "/run/systemd/resolve/resolv.conf"
+runtimeRequestTimeout: "15m"
+tlsCertFile: "/var/lib/kubelet/${vm_name}.pem"
+tlsPrivateKeyFile: "/var/lib/kubelet/${vm_name}-key.pem"
+containerRuntimeEndpoint: "unix:///var/run/containerd/containerd.sock"
+cgroupDriver: "systemd"
+EOF
+
+# Prevent scheduling pods on control nodes.
+if [[ $vm_name =~ ^control[0-9]+ ]]; then cat <<EOF | tee -a /var/lib/kubelet/kubelet-config.yaml
+registerWithTaints:
+  - key: node-roles.kubernetes.io/control-plane
+    value: ""
+    effect: NoSchedule
+EOF
+fi
+
+cat <<EOF | tee /etc/systemd/system/kubelet.service
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=containerd.service
+Requires=containerd.service
+
+[Service]
+ExecStart=/usr/local/bin/kubelet \\
+    --config=/var/lib/kubelet/kubelet-config.yaml \\
+    --kubeconfig=/var/lib/kubelet/kubeconfig \\
+    --v=2
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable containerd kubelet
+systemctl start containerd kubelet
+
+

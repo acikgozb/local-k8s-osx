@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+
+dir=${BASH_SOURCE%/*}
+
+source "$dir/../definitions"
+
+if helm repo list | grep -q "metallb"; then
+    helm repo add metallb https://metallb.github.io/metallb
+fi
+
+if kubectl -n kube-system get pods | grep -q "metallb"; then
+    helm install -n kube-system metallb metallb/metallb --wait --timeout 5m
+
+    cat <<EOF | kubectl apply -v=4 -f -
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: lb-pool
+  namespace: kube-system
+spec:
+  addresses:
+    - $kubenet_nw_bits.20-$kubenet_nw_bits.254
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: lb-l2adv
+  namespace: kube-system
+spec:
+  ipAddressPools:
+    - lb-pool
+EOF
+fi

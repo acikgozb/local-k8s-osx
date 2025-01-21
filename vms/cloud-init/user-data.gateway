@@ -1,6 +1,6 @@
 #cloud-config
 ssh_authorized_keys:
-    - $(<$(pwd)/vm-ssh-key.pub)
+    - $(<"$dir/vm-ssh-key.pub")
 packages:
     - curl
     - ipvsadm
@@ -11,4 +11,4 @@ package_reboot_if_required: false
 ca_certs:
     trusted:
         - |
-$(sed "s/^/      /g" "$dir/certs/ca.pem")
+$(sed "s/^/         /g" "$dir/../auth/ca.pem")
