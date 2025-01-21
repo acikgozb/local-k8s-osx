@@ -37,7 +37,7 @@ We need to make the DHCP server listen the main interface that is created by `vm
 Keep in mind that this is different than the `gateway` VM.
 So, we need to decide another IP address that will be used by the network interface created by `vmnet_socket`.
 
-For the last IP address, I need to go back to the responsibility of the `gateway` VM.
+For the last IP address, we need to go back to the responsibility of the `gateway` VM.
 It will be used as the main access point, meaning that it will act like a **load balancer** in front of the control nodes.
 For this to happen, it needs to have another IP address.
 
@@ -64,13 +64,13 @@ In this project, `dnsmasq` is used as a DHCP server (also for DNS as well).
 By default, `dnsmasq` reads its configurations from `/opt/homebrew/etc/dnsmasq.conf`.
 So, this project contains a custom dnsmasq configuration that is appended to the main configuration file when the setup script is executed.
 
-You can see the custom configuration in [dnsmasq.conf]() file, which is where the IPs we decide above is used.
+You can see the custom configuration in [dnsmasq.conf](./dnsmasq.conf) file, which is where the IPs we decide above is used.
 
 During the removal process, the custom configuration is removed from `/opt/homebrew/etc/dnsmasq.conf`, preventing persistent changes made on the host machine.
 
 ## <a id='step-3-creating-the-infrastructure' /> Step 3: Creating The Infrastructure
 
-The main script that is executed for the network infrastructure is called [setup-dnsmasq]().
+The main script that is executed for the network infrastructure is called [setup-dnsmasq](./setup-dnsmasq).
 
 Unfortunately, working on MacOS brings some challenges in this area.
 Whenever a new interface is created by `vmnet_socket` (same with QEMU), the default DHCP and DNS server of MacOS called `mDNSResponder` starts listening the interface's IP.
@@ -89,7 +89,8 @@ So, a workaround solution is implemented:
 
 4. When we destroy the interface, we make the `dnsmasq` enter into a malfunctioned state.
    The interface it listens does not exist anymore.
-   So, in order to fix this issue, the service is restarted once `vmnet_socket` creates the interface.
+   **But**, it is enough to prevent `mDNSResponder` to listen the IP/port, effectively achieving what is needed.
+   So, in order to fix the broken state, `dnsmasq` is restarted once `vmnet_socket` creates the interface.
 
 ## <a id='changing-the-default-subnet' /> Changing The Default Subnet
 
