@@ -12,12 +12,12 @@ Here are some disclaimers about this project:
 - This project is _NOT_ a replacement for several tools that does the same thing, such as `minikube`.
   Tools like `minikube` make the cluster bootstrapping really easy and straightforward to allow people to focus on other things, e.g. application deployments.
 
-- This project is aimed for the people who are curious about how a basic cluster is set up and how the main K8s components interact with each other.
+- This project is aimed for the people who are curious about how a basic cluster is set up from absolute nothing and how the main K8s components interact with each other.
 
 ## Requirements
 
 - This project is written for **arm64 MacOS hosts only**.
-  If you want to have a Linux version, you can refer to the guide I shared.
+  If you want to have a Linux version, you can refer to the guide above.
 
 - The required tools will be installed when you run the setup script.
 
@@ -67,7 +67,7 @@ So, it's not really an exact copy of the guide.
 The guide uses the subnet `192.168.1.0/24` to set up the cluster network.
 However, this subnet is commonly occupied by ISPs, so it is a bit risky to assume that it is free for use.
 
-The author mentions this in several different GitHub issues such as [this](https://github.com/ghik/kubernetes-the-harder-way/issues/16#issuecomment-2440799114).
+The author of the guide mentions this in several different GitHub issues such as [this](https://github.com/ghik/kubernetes-the-harder-way/issues/16#issuecomment-2440799114).
 So, the network infrastructure for this cluster is set up on a completely different subnet, which is `192.168.200.0/24`.
 
 To dive deep into the networking part of the cluster, please refer to the [README](./vms/NETWORK-INFRASTRUCTURE.md) here.

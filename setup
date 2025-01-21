@@ -15,7 +15,7 @@ packages=(wget curl tmux dnsmasq socket_vmnet qemu cfssl cdrtools kubernetes-cli
 echo "$program: the cluster setup needs the following tools:"
 echo "${packages[@]}"
 echo "$program: ensuring the packets are installed with Homebrew."
-# brew install "${packages[@]}"
+brew install "${packages[@]}"
 
 
 echo "$program: setting up the network for $kubenet_if_inet."
