@@ -2,25 +2,24 @@
 
 set -e
 
-dir=${BASH_SOURCE%/*}
-
-source "$dir/../definitions"
-
-etcd_version=3.5.9
-
 if [[ "$EUID" -ne 0 ]]; then
     echo "setup: the script must be run as root" >&2
     exit 1
 fi
 
-vm_inet=$(ip address show | grep -Po 'inet \K192\.168\.200\.\d+')
+etcd_version="$1"
+k8s_version="$2"
+arch="$3"
+
+vm_inet="$4"
 vm_name=$(hostname -s)
 
 # `etcd`
 
 etcd_archive=etcd-v${etcd_version}-linux-${arch}.tar.gz
+echo "args: etcd: $etcd_version, k8s: $k8s_version, arch: $arch, inet: $vm_inet"
 wget -q --show-progress --https-only --timestamping \
-    https://github.com/etcd-io/releases/donwload/v${etcd_version}/$etcd_archive
+    https://github.com/etcd-io/etcd/releases/download/v${etcd_version}/$etcd_archive
 
 tar -xvf $etcd_archive
 cp etcd-v${etcd_version}-linux-${arch}/etcd* /usr/local/bin
@@ -51,7 +50,7 @@ ExecStart=/usr/local/bin/etcd \\
     --peer-client-cert-auth \\
     --initial-advertise-peer-urls https://${vm_inet}:2380 \\
     --listen-peer-urls https://${vm_inet}:2380 \\
-    --listen-cilent-urls https://${vm_inet}:2379,https://127.0.0.1:2379 \\
+    --listen-client-urls https://${vm_inet}:2379,https://127.0.0.1:2379 \\
     --advertise-client-urls https://${vm_inet}:2379 \\
     --initial-cluster-token etcd-cluster-0 \\
     --initial-cluster control0=https://192.168.200.4:2380,control1=https://192.168.200.5:2380,control2=https://192.168.200.6:2380 \\
@@ -79,6 +78,9 @@ wget -q --show-progress --https-only --timestamping \
     https://dl.k8s.io/v${k8s_version}/bin/linux/${arch}/kube-controller-manager
 
 chmod +x kube-apiserver kube-scheduler kube-controller-manager
+cp kube-apiserver kube-scheduler kube-controller-manager /usr/local/bin/
+
+mkdir -p /var/lib/kubernetes
 cp \
     ca.pem \
     ca-key.pem \

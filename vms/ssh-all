@@ -10,11 +10,12 @@ if [[ -z "$tmux_session_name" ]]; then
     exit 1
 fi
 
-for vm_id in {0..6}; do
-    "$dir/setup-ssh" "$vm_id"
-done
-
 source "$dir/../definitions"
+
+for vm_id in {0..6}; do
+    vm_inet=$(get_inet "$vm_id")
+    "$dir/setup-ssh" "$vm_inet"
+done
 
 # Gateway SSH session.
 tmux new-session -s "$tmux_session_name" -n "kubenet-ssh-gateway" -d
@@ -46,7 +47,4 @@ ssh_window ssh-controls 1 3 even-vertical
 ssh_window ssh-workers 4 6 even-vertical
 
 # A window with SSH connections to both "control" and "worker" VMs.
-ssh_window ssh-controls 1 6 tiled
-
-# Attach to the created tmux session, "control" window.
-tmux attach -t "$tmux_session_name:ssh-controls"
+ssh_window ssh-all 1 6 tiled

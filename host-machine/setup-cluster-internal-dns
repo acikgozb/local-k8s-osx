@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -e
+
+if ! helm repo list | grep -q "coredns"; then
+    helm repo add --force-update coredns https://coredns.github.io/helm/
+fi
+
+if ! kubectl -n kube-system get services | grep -q "coredns"; then
+    helm install -n kube-system coredns coredns/coredns \
+        --set service.clusterIP="10.32.0.10" \
+        --set replicaCount=2 \
+        --wait --timeout 3m
+fi

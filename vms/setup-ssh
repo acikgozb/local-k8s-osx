@@ -4,23 +4,15 @@ set -e
 
 dir=${BASH_SOURCE%/*}
 
-source "$dir/../definitions"
-
-vm_id="$1"
-
-inets=()
-read -r -a inets < <(get_inets)
-
-vm_inet=${inets[vm_id]}
+vm_inet="$1"
 
 until nc -zw 10 "$vm_inet" 22; do sleep 1; done
 
-vm_name=$(get_vm_name "$vm_id")
 # Remove the stale entries for a given VM.
-if [[ -f ~/.ssh/known_hosts ]]; then
-    sed -i '' "/^$vm_name/d" ~/.ssh/known_hosts
+if [[ -f "$HOME/.ssh/known_hosts" ]]; then
+    sed -i '' "/^$vm_inet/d" "$HOME/.ssh/known_hosts"
 fi
 
-ssh-keyscan "$vm_inet" 2> /dev/null >> ~/.ssh/known_hosts
+ssh-keyscan "$vm_inet" 2> /dev/null >> "$HOME/.ssh/known_hosts"
 
 until ssh "ubuntu@$vm_inet" -i "$dir/vm-ssh-key" exit; do sleep 1; done

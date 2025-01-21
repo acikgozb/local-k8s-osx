@@ -1,5 +1,9 @@
 #cloud-config
 ssh_authorized_keys:
-    - $(<./vm-ssh-key.pub)
+    - $(<"$dir/vm-ssh-key.pub")
 packages:
     - curl
+    - nfs-common
+package_update: true
+package_upgrade: true
+package_reboot_if_required: false

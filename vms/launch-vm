@@ -19,7 +19,7 @@ mac="52:52:52:00:00:0$vm_id"
     -nographic \
     -machine virt,highmem=on \
     -accel hvf \
-    -cpu host \
+    -cpu cortex-a72 \
     -smp 2 \
     -m 2G \
     -device virtio-net-pci,netdev=k8snet,mac="$mac" \

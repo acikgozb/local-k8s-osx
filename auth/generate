@@ -2,11 +2,11 @@
 
 dir=${BASH_SOURCE%/*}
 
+source "$dir/../definitions"
+
 node-csr() {
     vm_names=(control{0..2} worker{0..2})
 
-    # TODO: acikgozb: The seq definition in the guide is incorrect. Notify the author.
-    # TODO: acikgozb: Use $inet_nw_bits instead of hardcoding 192.168.200. The subnet bits should be controlled from a central place.
     for vm_id in {0..5}; do
         vm_name=${vm_names[$vm_id]}
         cat <<EOF > "$dir/$vm_name-csr.json"
@@ -28,7 +28,7 @@ node-csr() {
     "hosts": [
         "$vm_name",
         "$vm_name.kubenet",
-        "192.168.200.$((4 + vm_id))"
+        "$kubenet_nw_bits.$((4 + vm_id))"
     ]
 }
 EOF
@@ -36,15 +36,15 @@ EOF
 }
 
 certs() {
-    cfssl gencert -initca "$dir/ca-csr.json" | cfssljson -bare ca
+    cfssl gencert -initca "$dir/ca-csr.json" | cfssljson -bare "$dir/ca"
 
-    for name in control{0..2} worker{0..2} kubernetes admin kube-scheduler kube-controller-manager kube-proxy service-account; do
+    for name in control{0..2} worker{0..2} kubernetes admin kube-scheduler kube-controller-manager service-account; do
         cfssl gencert \
             -ca="$dir/ca.pem" \
             -ca-key="$dir/ca-key.pem" \
             -config="$dir/ca-config.json" \
             -profile=kubernetes \
-            "$dir/$name-csr.json" | cfssljson -bare "$name"
+            "$dir/$name-csr.json" | cfssljson -bare "$dir/$name"
     done
 }
 
@@ -53,7 +53,6 @@ kubeconfigs() {
         "admin,admin"
         "kube-scheduler,system:kube-scheduler"
         "kube-controller-manager,system:kube-controller-manager"
-        "kube-proxy,system:kube-proxy"
     )
     for i in {0..2}; do
         pairs+=("control$i,system:node:control$i" "worker$i,system:node:worker$i")
@@ -66,7 +65,7 @@ kubeconfigs() {
         kubectl config set-cluster kubenet \
             --certificate-authority="$dir/ca.pem" \
             --embed-certs=true \
-            --server=https://192.168.200.11:6443 \
+            --server=https://$kube_api_inet:6443 \
             --kubeconfig="$kubeconfig"
 
         kubectl config set-credentials "$user" \
