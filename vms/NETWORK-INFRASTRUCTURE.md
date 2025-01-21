@@ -1,13 +1,5 @@
 # Network Infrastructure
 
-<!--toc:start-->
-
-- [Step 1: Deciding the IPs](#step-1-deciding-the-ips)
-- [Step 2: The DHCP Server](#step-2-the-dhcp-server)
-- [Step 3: Creating The Infrastructure](#step-3-creating-the-infrastructure)
-- [Changing The Default Subnet](#changing-the-default-subnet)
-<!--toc:end-->
-
 The [original guide](https://github.com/ghik/kubernetes-the-harder-way) uses the subnet `192.168.1.0/24` to set up the cluster network.
 However, this subnet is commonly occupied by ISPs, so it is a bit risky to assume that it is free for use.
 
@@ -16,6 +8,16 @@ The author mentions this in several different GitHub issues such as [this](https
 So, the network infrastructure for this cluster is set up on a completely different subnet, which is `192.168.200.0/24`.
 
 This document outlines how the overall network is set up for the cluster.
+
+## Table of Contents
+
+<!--toc:start-->
+
+- [Step 1: Deciding the IPs](#step-1-deciding-the-ips)
+- [Step 2: The DHCP Server](#step-2-the-dhcp-server)
+- [Step 3: Creating The Infrastructure](#step-3-creating-the-infrastructure)
+- [Changing The Default Subnet](#changing-the-default-subnet)
+<!--toc:end-->
 
 ## <a id='step-1-deciding-the-ips' /> Step 1: Deciding the IPs
 
