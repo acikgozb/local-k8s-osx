@@ -1,4 +1,4 @@
-# `local-k8s-osx`: Local Kubernetes Cluster on MacOS
+# Local Kubernetes Cluster on MacOS
 
 This project is an implementation of a wonderfully written guide called [kubernetes-the-harder-way](https://github.com/ghik/kubernetes-the-harder-way).
 It mainly serves as a learning material and a base playground for further experimentations.
